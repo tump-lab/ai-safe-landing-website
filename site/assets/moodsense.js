@@ -239,17 +239,24 @@
   /* ----- overlays: a stack of screens, plus a sheet on top ----- */
   Phone.prototype.clearTimers = function () { this.timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); this.timers = []; };
   Phone.prototype.push = function (name, arg, title, modal) { this.clearTimers(); this.stack.push({ name: name, arg: arg, title: title, modal: modal }); this.paint(); };
-  Phone.prototype.pop = function () { this.clearTimers(); this.stack.pop(); this.room = null; this.paint(); };
+  Phone.prototype.pop = function () { this.clearTimers(); this.stack.pop(); this.room = null; this.paint(true); };
   Phone.prototype.closeAll = function () { this.clearTimers(); this.stack = []; this.room = null; if (this.layer) { this.layer.hidden = true; this.layer.innerHTML = ''; } };
-  Phone.prototype.paint = function () {
+  Phone.prototype.paint = function (still) {
     var top = this.stack[this.stack.length - 1];
     if (!top) { this.layer.hidden = true; this.layer.innerHTML = ''; return; }
     var back = this.stack.length > 1 || !top.modal;
     var head = top.title == null ? '<div class="ms-navbar" style="background:var(--bg);border:0"><h4></h4><button type="button" data-act="closeAll" aria-label="Close">' + icon('close') + '</button></div>'
       : '<div class="ms-navbar">' + (back ? '<button type="button" data-act="back" aria-label="Back">' + icon('arrow-back') + '</button>' : '') + '<h4>' + top.title + '</h4>' + (back ? '' : '<button type="button" data-act="closeAll" aria-label="Close">' + icon('close') + '</button>') + '</div>';
-    this.layer.innerHTML = '<div class="ms-full" role="dialog">' + head + '<div class="ms-slot" style="flex:1;display:flex;flex-direction:column;min-height:0"></div></div>';
+    this.layer.innerHTML = '<div class="ms-full" role="dialog"' + (still ? ' style="animation:none"' : '') + '>' + head + '<div class="ms-slot" style="flex:1;display:flex;flex-direction:column;min-height:0"></div></div>';
     this.layer.hidden = false;
     this['s_' + top.name](this.layer.querySelector('.ms-slot'), top.arg);
+  };
+  Phone.prototype.refresh = function () {
+    var top = this.stack[this.stack.length - 1], slot = this.layer.querySelector('.ms-slot');
+    if (!top || !slot) return this.paint();
+    var y = slot.firstElementChild ? slot.firstElementChild.scrollTop : 0;
+    this['s_' + top.name](slot, top.arg);
+    if (slot.firstElementChild) slot.firstElementChild.scrollTop = y;
   };
   Phone.prototype.sheet = function (inner) {
     this.closeSheet();
@@ -336,7 +343,9 @@
       renderAll(); return;
     }
     var cur = this.qa[this.qi];
-    box.innerHTML = '<div class="ms-full-body"><p class="ms-title">Mood Check</p><p class="ms-subtitle">Question ' + (this.qi + 1) + ' of 4</p><div class="ms-q-track"><span style="width:' + (this.qi / 4 * 100) + '%"></span></div><p class="ms-q-stem">' + PHQ_STEM + '</p><p class="ms-q">' + PHQ[this.qi] + '</p><div class="ms-opts">' + PHQ_OPTS.map(function (o, v) { return '<button type="button" class="ms-opt' + (cur === v ? ' is-on' : '') + '" data-act="ans" data-arg="' + v + '">' + o + '</button>'; }).join('') + '</div>' + (this.qi > 0 ? '<button type="button" class="ms-btn ms-ghost" style="margin-top:16px" data-act="qback">Back</button>' : '') + '</div>';
+    box.innerHTML = '<div class="ms-full-body"><p class="ms-title">Mood Check</p><p class="ms-subtitle">Question ' + (this.qi + 1) + ' of 4</p><div class="ms-q-track"><span data-progress style="width:' + ((this.prevQ != null ? this.prevQ : this.qi) / 4 * 100) + '%"></span></div><p class="ms-q-stem">' + PHQ_STEM + '</p><p class="ms-q">' + PHQ[this.qi] + '</p><div class="ms-opts">' + PHQ_OPTS.map(function (o, v) { return '<button type="button" class="ms-opt' + (cur === v ? ' is-on' : '') + '" data-act="ans" data-arg="' + v + '">' + o + '</button>'; }).join('') + '</div>' + (this.qi > 0 ? '<button type="button" class="ms-btn ms-ghost" style="margin-top:16px" data-act="qback">Back</button>' : '') + '</div>';
+    var bar = box.querySelector('[data-progress]'), qi = this.qi; this.prevQ = qi;
+    requestAnimationFrame(function () { requestAnimationFrame(function () { bar.style.width = (qi / 4 * 100) + '%'; }); });
   };
   // Depth 1: Choose your community. Depth 2: choosing a city by hand.
   Phone.prototype.s_choose = function (box) {
@@ -576,9 +585,9 @@
       case 'reasonsDone': this.reasonEntry.reasons = this.pending.slice(); this.closeSheet(); return renderAll();
       case 'dot': this.dot = this.dot === +arg ? null : +arg; return this.render('home');
       case 'trend': this.trend = arg; return this.render('home');
-      case 'phq': this.qi = 0; this.qa = []; return this.push('phq', null, null, true);
-      case 'ans': this.qa[this.qi] = +arg; this.paint(); setTimeout(function () { self.qi++; self.paint(); }, 250); return;
-      case 'qback': this.qi = Math.max(0, this.qi - 1); return this.paint();
+      case 'phq': this.qi = 0; this.qa = []; this.answering = false; this.prevQ = null; return this.push('phq', null, null, true);
+      case 'ans': if (this.answering) return; this.answering = true; this.qa[this.qi] = +arg; b.classList.add('is-on'); this.timers.push(setTimeout(function () { self.answering = false; self.qi++; self.refresh(); }, 250)); return;
+      case 'qback': this.qi = Math.max(0, this.qi - 1); return this.refresh();
       case 'choose': return this.push('choose', null, 'Choose Your Community', true);
       case 'chooseManual': return this.push('chooseManual', null, 'Choose Your Community');
       case 'pickCity': S.city = CITIES[+arg]; this.closeAll(); this.toast('Your community is now ' + S.city.split(',')[0] + '.'); return renderAll();
