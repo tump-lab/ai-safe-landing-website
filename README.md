@@ -1,32 +1,32 @@
-# AI SafeLanding 官网
+# AI SafeLanding Website
 
-纯静态网站，没有 npm 依赖，也不需要构建服务。线上地址：https://reliable-griffin-292c60.netlify.app/
+A plain static website with no npm dependencies and no build service. Live site: https://reliable-griffin-292c60.netlify.app/
 
-## 目录
+## Structure
 
 ```
-build.py        页面文案和模板，生成 site/ 下的所有 HTML 和 _redirects
-components/     页面片段（各区块的 HTML 模板、团队卡片、品牌标志）
-site/           发布目录，Netlify 直接发布这个文件夹
-  assets/       CSS、JS、图片（直接在这里修改）
-netlify.toml    Netlify 配置：publish = "site"
+build.py        Page copy and templates; generates every HTML file and _redirects in site/
+components/     Page fragments (section templates, team cards, brand mark)
+site/           Publish directory; Netlify serves this folder as-is
+  assets/       CSS, JS and images (edit these directly)
+netlify.toml    Netlify config: publish = "site"
 ```
 
-## 修改网站
+## Editing the site
 
-- **改文案或页面结构**：修改 `build.py` 或 `components/`，再运行 `python3 build.py`。不要直接改 `site/` 里的 HTML，下次构建时会被覆盖。
-- **改样式或交互**：直接修改 `site/assets/` 里的 CSS / JS，不需要构建。
+- **Copy or page structure**: edit `build.py` or `components/`, then run `python3 build.py`. Do not edit the HTML in `site/` by hand; the next build will overwrite it.
+- **Styles or interactions**: edit the CSS / JS in `site/assets/` directly; no build needed.
 
-修改生成的 HTML 后，要把 `site/` 一起提交。
+After regenerating the HTML, commit the updated `site/` folder as well.
 
-## 本地预览
+## Local preview
 
 ```sh
 python3 -m http.server 4311 --directory site
 ```
 
-然后打开 http://localhost:4311/
+Then open http://localhost:4311/
 
-## 部署
+## Deployment
 
-可以在 Netlify 连接这个仓库：构建命令留空，发布目录填 `site`；也可以继续把 `site/` 文件夹拖进 Netlify 手动部署。
+Either connect this repository in Netlify (leave the build command empty and set the publish directory to `site`), or keep deploying manually by dragging the `site/` folder into Netlify.
