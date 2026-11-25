@@ -114,94 +114,18 @@
     return '<div class="ms-row"><span class="ms-tile' + (o.soft ? ' ms-soft' : '') + '"' + (o.bg ? ' style="background:' + o.bg + ';color:' + (o.fg || 'inherit') + '"' : '') + '>' + (o.icon || '') + '</span><span class="ms-rt"><b>' + o.title + '</b>' + (o.sub ? '<small>' + o.sub + '</small>' : '') + '</span>' + (o.right != null ? '<span class="ms-right' + (o.mutedRight ? ' ms-muted' : '') + '">' + o.right + '</span>' : '') + '</div>';
   }
 
-  /* ---------- the mood planet: a dotted globe, one continent per mood ---------- */
+  /* ---------- the mood planet (moodsense-planet.js, ported from the app) ---------- */
   function cityCounts() {
     var c = { calm: 34, good: 32, stressed: 25, low: 16, tired: 15 };
     todayMoods().forEach(function (m) { c[m]++; });
     return c;
   }
-  var DOTS = (function () {
-    var out = [], N = 1500, golden = Math.PI * (3 - Math.sqrt(5));
-    for (var i = 0; i < N; i++) {
-      var y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = golden * i;
-      out.push({ x: Math.cos(th) * r, y: y, z: Math.sin(th) * r, lon: Math.atan2(Math.sin(th) * r, Math.cos(th) * r), lat: Math.asin(y) });
-    }
-    return out;
-  })();
-  // Continent centres (lat, lon); each continent's size follows that mood's share of today's check-ins.
-  var CENTRES = { calm: [0.35, 0.3], good: [-0.3, 1.55], stressed: [0.45, 2.75], low: [-0.4, 3.95], tired: [0.2, 5.1] };
-  function landFor(d, counts, total) {
-    var best = null, bestScore = 0;
-    MOODS.forEach(function (m) {
-      var c = CENTRES[m], dLon = Math.atan2(Math.sin(d.lon - c[1]), Math.cos(d.lon - c[1]));
-      var dist = Math.sqrt(Math.pow((d.lat - c[0]) * 1.25, 2) + Math.pow(dLon * Math.cos(d.lat), 2));
-      var wobble = 0.1 * Math.sin(d.lon * 4 + c[0] * 9) + 0.08 * Math.cos(d.lat * 6 + c[1] * 5) + 0.05 * Math.sin((d.lon + d.lat) * 11);
-      var reach = 0.3 + 0.88 * Math.sqrt(counts[m] / total) + wobble;
-      var score = 1 - dist / reach;
-      if (score > bestScore) { bestScore = score; best = m; }
-    });
-    return best;
-  }
-  function drawPlanet(cv, rot) {
-    var dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
-    if (!W || !H) return;
-    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
-    var g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    var cx = W / 2, cy = H * 0.45, R = Math.min(W, H) * 0.36, counts = cityCounts(), total = 0, lm = latestMood(), tilt = -0.32;
-    MOODS.forEach(function (m) { total += counts[m]; });
-    // halo
-    var halo = g.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 1.6);
-    halo.addColorStop(0, 'rgba(201,184,216,0.45)'); halo.addColorStop(1, 'rgba(201,184,216,0)');
-    g.fillStyle = halo; g.fillRect(0, 0, W, H);
-    // stars
-    for (var s = 0; s < 18; s++) { var sx = ((s * 97) % 100) / 100 * W, sy = ((s * 61) % 100) / 100 * H * 0.9, tw = 0.4 + 0.6 * Math.abs(Math.sin(rot * 3 + s)); g.fillStyle = 'rgba(154,134,184,' + (0.25 + 0.35 * tw).toFixed(2) + ')'; g.beginPath(); g.arc(sx, sy, s % 4 ? 1 : 1.6, 0, 7); g.fill(); }
-    function ring(front) {
-      g.save(); g.translate(cx, cy); g.rotate(-0.2);
-      var grad = g.createLinearGradient(-R * 1.6, 0, R * 1.6, 0); grad.addColorStop(0, 'rgba(154,134,184,0.1)'); grad.addColorStop(0.5, 'rgba(154,134,184,0.75)'); grad.addColorStop(1, 'rgba(154,134,184,0.1)');
-      g.strokeStyle = grad; g.lineWidth = 2; g.beginPath(); g.ellipse(0, 0, R * 1.5, R * 0.3, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); g.stroke();
-      g.lineWidth = 1; g.beginPath(); g.ellipse(0, 0, R * 1.62, R * 0.34, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); g.stroke();
-      g.restore();
-    }
-    ring(false);
-    // ocean body
-    var body = g.createRadialGradient(cx - R * 0.4, cy - R * 0.45, R * 0.1, cx, cy, R);
-    body.addColorStop(0, '#fffdf8'); body.addColorStop(0.7, '#f4ede4'); body.addColorStop(1, '#e3d7ea');
-    g.fillStyle = body; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
-    // dots
-    var you = null, ct = Math.cos(tilt), st = Math.sin(tilt), cr = Math.cos(rot), sr = Math.sin(rot);
-    DOTS.forEach(function (d) {
-      var x = d.x * cr - d.z * sr, z = d.x * sr + d.z * cr, y = d.y * ct - z * st; z = d.y * st + z * ct;
-      if (z <= 0) return;
-      var m = d.m || (d.m = landFor(d, counts, total) || 'sea'), px = cx + x * R, py = cy - y * R, rr = 0.9 + 1.8 * z;
-      if (m === 'sea') { g.fillStyle = 'rgba(154,134,184,' + (0.08 + 0.12 * z).toFixed(2) + ')'; rr *= 0.5; }
-      else g.fillStyle = MOOD[m].mid;
-      g.globalAlpha = m === 'sea' ? 1 : 0.7 + 0.3 * z;
-      g.beginPath(); g.arc(px, py, rr, 0, 7); g.fill();
-      if (lm && m === lm && z > 0.75 && (!you || z > you[2])) you = [px, py, z];
-    });
-    g.globalAlpha = 1;
-    // terminator shading + rim light
-    var shade = g.createRadialGradient(cx - R * 0.5, cy - R * 0.55, R * 0.3, cx, cy, R * 1.02);
-    shade.addColorStop(0, 'rgba(255,255,255,0.25)'); shade.addColorStop(0.65, 'rgba(255,255,255,0)'); shade.addColorStop(1, 'rgba(98,76,128,0.18)');
-    g.fillStyle = shade; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = 'rgba(216,200,224,0.9)'; g.lineWidth = 1.2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
-    if (you) {
-      g.fillStyle = 'rgba(79,63,110,0.18)'; g.beginPath(); g.arc(you[0], you[1], 9, 0, 7); g.fill();
-      g.fillStyle = '#4f3f6e'; g.beginPath(); g.arc(you[0], you[1], 4, 0, 7); g.fill(); g.strokeStyle = '#fffdf8'; g.lineWidth = 2; g.stroke();
-      var label = 'You', tx = you[0] + 9, ty = you[1] - 16; g.font = '700 10px -apple-system,Helvetica,sans-serif';
-      var tw = g.measureText(label).width + 12; g.fillStyle = '#4f3f6e'; roundRect(g, tx, ty, tw, 16, 8); g.fill(); g.fillStyle = '#fff'; g.fillText(label, tx + 6, ty + 11.5);
-    }
-    ring(true);
-    var ma = rot * 0.7, mx = cx + Math.cos(ma) * R * 1.4, my = cy + Math.sin(ma) * R * 0.28 - Math.sin(ma) * 4;
-    var moon = g.createRadialGradient(mx - 2, my - 2, 1, mx, my, 7); moon.addColorStop(0, '#fffdf8'); moon.addColorStop(1, '#e6dcec');
-    g.fillStyle = moon; g.beginPath(); g.arc(mx, my, 6.5, 0, 7); g.fill();
-  }
-  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function countList() { var c = cityCounts(); return MOODS.map(function (m) { return c[m]; }); }
 
   /* ---------- one phone ---------- */
   function Phone(root) {
     this.r = root; this.tab = root.getAttribute('data-ms-start') || 'home';
-    this.trend = 'week'; this.youRange = 'week'; this.cat = 'for-you'; this.filter = 'all'; this.dot = null; this.report = 'weekly'; this.rot = 0.4; this.anim = null; this.visible = false;
+    this.trend = 'week'; this.youRange = 'week'; this.cat = 'for-you'; this.filter = 'all'; this.dot = null; this.report = 'weekly'; this.visible = false;
     var self = this;
     this.r.addEventListener('click', function (e) { self.click(e); });
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { self.visible = es[0].isIntersecting; self.spin(); }, { threshold: 0.1 }).observe(root);
@@ -231,9 +155,8 @@
     var sel = S.today.filter(function (e) { return e.ts === self.dot; })[0];
     html += '<div class="ms-today"><div class="ms-today-head"><b>Today</b><span>' + (sel ? time(sel.ts) + ' · ' + LABEL[sel.mood] : 'Tap a dot to see it') + '</span></div><div class="ms-dots">' + S.today.map(function (e) { return '<button type="button" data-act="dot" data-arg="' + e.ts + '" class="' + (e.ts === self.dot ? 'is-on ' : '') + (e.fresh ? 'is-new' : '') + '" style="background:' + MOOD[e.mood].mid + '" aria-label="' + time(e.ts) + ', ' + LABEL[e.mood] + '"></button>'; }).join('') + '</div></div></div>';
     html += '<div class="ms-card ms-rows">' + row({ icon: '📋', title: 'Mood Check For This Week', sub: '4 questions · under a minute', right: '<span class="ms-pill">Start</span>' }) + '</div>';
-    var c = cityCounts();
     html += '<div class="ms-sec"><span>Your Community</span><span class="ms-link">Change</span></div><p class="ms-community-label">Mountain View, California, United States</p>';
-    html += '<div class="ms-planet" data-planet><canvas aria-label="Mood planet: each continent is one mood, sized by how many people nearby feel it today"></canvas><div class="ms-planet-legend">' + MOODS.map(function (m) { return '<span><i style="background:' + MOOD[m].mid + '"></i>' + c[m] + ' ' + LABEL[m] + '</span>'; }).join('') + '</div></div>';
+    html += '<div data-planet-slot></div>';
     html += this.trendCard();
     this.view('home').innerHTML = html;
     this.flash = null;
@@ -272,27 +195,21 @@
       '<div class="ms-legend"><span><i></i>How You Said You Felt</span><span><i class="dash"></i>Your Daily Rhythm</span></div><p class="ms-foot">An early guess for tomorrow — it gets better as you share more days</p></div>';
   };
   Phone.prototype.bindPlanet = function () {
-    var box = this.view('home').querySelector('[data-planet]'), self = this;
-    if (!box) return;
-    this.cv = box.querySelector('canvas');
-    drawPlanet(this.cv, this.rot);
-    var sx = null, sr = 0;
-    box.addEventListener('pointerdown', function (e) { sx = e.clientX; sr = self.rot; self.dragging = true; box.setPointerCapture(e.pointerId); });
-    box.addEventListener('pointermove', function (e) { if (sx == null) return; self.rot = sr - (e.clientX - sx) / 70; drawPlanet(self.cv, self.rot); });
-    box.addEventListener('pointerup', function () { sx = null; self.dragging = false; });
-    box.addEventListener('pointercancel', function () { sx = null; self.dragging = false; });
+    var slot = this.view('home').querySelector('[data-planet-slot]');
+    if (!slot || !window.MSPlanet) return;
+    if (!this.planetEl) {
+      this.planetEl = document.createElement('div');
+      this.planetEl.className = 'ms-planet';
+      this.planetEl.setAttribute('role', 'img');
+      this.planet = window.MSPlanet.mount(this.planetEl, countList);
+    }
+    var c = cityCounts();
+    this.planetEl.setAttribute('aria-label', 'One planet with a continent for each mood in your community today: ' + MOODS.map(function (m) { return c[m] + ' ' + LABEL[m].toLowerCase(); }).join(', ') + '. You are the moon.');
+    slot.replaceWith(this.planetEl);
+    this.spin();
   };
   Phone.prototype.spin = function () {
-    var self = this;
-    if (this.anim || !this.visible || this.tab !== 'home') return;
-    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    var last = 0;
-    var tick = function (t) {
-      if (!self.visible || self.tab !== 'home' || !self.cv || !self.cv.isConnected) { self.anim = null; return; }
-      if (t - last > 33) { if (!self.dragging) self.rot += 0.0035; drawPlanet(self.cv, self.rot); last = t; }
-      self.anim = requestAnimationFrame(tick);
-    };
-    this.anim = requestAnimationFrame(tick);
+    if (this.planet) { this.planet.setVisible(this.visible && this.tab === 'home'); this.planet.draw(); }
   };
 
   /* Community */

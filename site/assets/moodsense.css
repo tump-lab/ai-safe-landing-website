@@ -82,13 +82,13 @@
 @keyframes msPop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
 .ms-device .ms-empty-note{font-size:13px;color:var(--ink2);margin-top:18px}
 .ms-device .ms-community-label{font-size:13px;color:var(--ink);margin-top:-4px}
-.ms-device .ms-planet{position:relative;margin-top:12px;height:290px;border-radius:16px;overflow:hidden;background:radial-gradient(110% 85% at 50% 35%,#fffdf8 0%,#f6efe6 55%,#ece3ef 100%);border:.5px solid var(--line);cursor:grab;touch-action:pan-y}
-.ms-device .ms-planet:active{cursor:grabbing}
-.ms-device .ms-planet canvas{width:100%;height:100%;display:block}
-.ms-device .ms-planet-legend{position:absolute;left:6px;right:6px;bottom:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;pointer-events:none}
-.ms-device .ms-planet-legend span{display:flex;align-items:center;gap:3px;font-size:10px;white-space:nowrap;font-weight:600;color:var(--ink2)}
-.ms-device .ms-planet-legend i{width:8px;height:8px;border-radius:50%}
-.ms-device .ms-planet-hint{position:absolute;top:10px;right:12px;font-size:10px;font-weight:600;color:var(--ink3)}
+.ms-device .ms-planet{position:relative;margin-top:8px;border-radius:20px;overflow:hidden;background:#f8f2e8;touch-action:pan-y;aspect-ratio:350/300}
+
+.ms-device .ms-planet canvas{width:100%;display:block}
+
+
+
+
 .ms-device .ms-trend-head{display:flex;gap:12px;align-items:center}
 .ms-device .ms-trend-head svg{width:44px;height:44px;flex-shrink:0}
 .ms-device .ms-trend-head div{min-width:0}
