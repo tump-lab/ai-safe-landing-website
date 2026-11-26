@@ -261,3 +261,17 @@
 .ms-device .ms-legal p{font-size:14px;color:var(--ink2);line-height:1.5;margin-bottom:12px}
 .ms-device .ms-legal h4{font-size:15px;font-weight:700;color:var(--ink);margin:14px 0 6px}
 @media(prefers-reduced-motion:reduce){.ms-device *{animation:none!important;transition:none!important}}
+
+/* Home page teaser: MoodSense phone sized like the former check-in screenshot */
+.page-home .home-moodsense .ms-device{zoom:.78}
+@media(max-width:700px){.page-home .home-moodsense .ms-device{zoom:.62}}
+
+/* Products gallery labels: match the site's card title / supporting text sizes */
+.mobile-gallery .ms-gallery .gallery-screen-heading h4{font-size:32px;line-height:1.2}
+.mobile-gallery .ms-gallery .gallery-screen-heading p{font-size:18px;line-height:1.45}
+@media(max-width:720px){.mobile-gallery .ms-gallery .gallery-screen-heading h4{font-size:28px}}
+
+/* Products section intro under "Small moments. A clearer perspective." (replaces the centred hint inside the card) */
+.products-first .section-top .products-lead{font-size:20px;line-height:1.6;color:var(--muted);max-width:none;margin-top:18px}
+@media(max-width:600px){.products-first .section-top .products-lead{font-size:18px}}
+.products-first .section-top{grid-template-columns:minmax(0,1fr)}

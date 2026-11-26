@@ -45,8 +45,9 @@ def closing(title="Bring research to life.",copy="Explore a research collaborati
     return f'''<section class="closing"><div class="wrap closing-inner"><div>{eyebrow('AI SAFELANDING')}<h2>{title}</h2><p>{copy}</p></div><div class="closing-actions">{button('Contact Our Team','@/contact/')}</div></div></section>'''
 
 def concept():
-    images = ''.join(f'<img class="home-checkin-image" data-preview-theme="{theme}" src="@/assets/previews/checkin-{theme}.png?v=134" width="520" height="1040" alt="Wellbeing app concept: a complete daily check-in with mood selection, an optional note, and Save check-in." loading="lazy" decoding="async">' for theme in ['research', 'care', 'human', 'clarity'])
-    return f'<div class="phone-showcase home-checkin-preview">{images}</div>'
+    # Home page teaser: the same MoodSense phone as the Products page, opened on Home, shown cropped and non-interactive.
+    phone = (ROOT/'components/moodsense-app.html').read_text().replace('class="ms-device" data-ms-phone', 'class="ms-device" data-ms-phone data-ms-start="home"', 1)
+    return f'<div class="phone-showcase home-checkin-preview home-moodsense" role="img" aria-label="MoodSense app concept: the Home tab, with a one-tap mood check-in."><div inert>{phone}</div></div>'
 
 def mobile_gallery():
     app = (ROOT/'components/moodsense-app.html').read_text()
@@ -54,7 +55,7 @@ def mobile_gallery():
     for tab, title, caption in [('home', 'Home', 'One tap to say how you feel.'), ('community', 'Community', 'Your city\u2019s mood, and your people.'), ('recharge', 'Recharge', 'Small steps matched to your mood.'), ('you', 'You', 'Your tree, your trend, your week.')]:
         phone = app.replace('class="ms-device" data-ms-phone', f'class="ms-device" data-ms-phone data-ms-start="{tab}"', 1)
         screens.append(f'<section class="gallery-screen" aria-label="{title}"><div class="gallery-screen-heading"><h4>{title}</h4><p>{caption}</p></div>{phone}</section>')
-    return '<div class="mobile-gallery" id="app-preview"><p class="ms-gallery-hint">The MoodSense app, with sample data. Tap around: a check-in on Home updates the other tabs.</p><div class="ms-gallery">'+''.join(screens)+'</div></div>'
+    return '<div class="mobile-gallery" id="app-preview"><div class="ms-gallery">'+''.join(screens)+'</div></div>'
 
 def story(name, **slots):
     html = (ROOT/f'components/story-{name}.html').read_text()
